@@ -4,6 +4,8 @@ CONFIG += c++17
 
 SOURCES += main.cpp
 
-INCLUDEPATH += $$system(pkg-config --cflags libvlc)
+CONFIG += link_pkgconfig
+PKGCONFIG += libvlc
 
-LIBS += $$system(pkg-config --libs libvlc)
+target.path = /usr/local/bin
+INSTALLS += target
