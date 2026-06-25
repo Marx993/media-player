@@ -1,0 +1,149 @@
+#include <QApplication>
+#include <QMainWindow>
+#include <QToolBar>
+#include <QSlider>
+#include <QPushButton>
+#include <QLabel>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
+#include <QPalette>
+#include <QColor>
+#include <QStyleFactory>
+#include <QTimer>
+#include <QStatusBar>
+#include <QMenuBar>
+#include <QMenu>
+#include <QAction>
+
+// Mock VLC Player Logic (Not a QObject, just a helper struct/class)
+struct MockVLCPlayer {
+    bool isPlaying = false;
+    int currentTime = 0;
+    int duration = 300; // 5 minutes mock
+
+    void play() { isPlaying = true; }
+    void pause() { isPlaying = false; }
+    void stop() { isPlaying = false; currentTime = 0; }
+    void seek(int pos) { currentTime = pos; }
+};
+
+// Removed Q_OBJECT macro to avoid MOC dependency
+class RetroVLC : public QMainWindow {
+public:
+    RetroVLC() {
+        setWindowTitle("VLC Media Player - Retro");
+        resize(600, 400);
+
+        // ===== STYLE SETUP (Matching your browser snippet) =====
+        QApplication::setStyle(QStyleFactory::create("Windows"));
+        
+        QPalette p;
+        p.setColor(QPalette::Window, QColor("#C0C0C0"));       // Main gray background
+        p.setColor(QPalette::Base, QColor("#FFFFFF"));         // White input areas
+        p.setColor(QPalette::Button, QColor("#C0C0C0"));       // Buttons
+        p.setColor(QPalette::Light, Qt::white);                // Highlight for 3D effect
+        p.setColor(QPalette::Dark, QColor("#404040"));         // Shadow for 3D effect
+        p.setColor(QPalette::Mid, QColor("#808080"));
+        p.setColor(QPalette::Text, Qt::black);
+        p.setColor(QPalette::ButtonText, Qt::black);
+        p.setColor(QPalette::Highlight, QColor("#000080"));    // Fixed: Quote closed
+        p.setColor(QPalette::HighlightedText, Qt::white);
+
+        QApplication::setPalette(p);
+
+        // ===== MENU BAR =====
+        QMenuBar *menuBar = this->menuBar();
+        QMenu *fileMenu = menuBar->addMenu("&File");
+        QMenu *viewMenu = menuBar->addMenu("&View");
+        QMenu *helpMenu = menuBar->addMenu("&Help");
+
+        fileMenu->addAction("&Open File...");
+        fileMenu->addAction("E&xit", qApp, &QApplication::quit);
+        viewMenu->addAction("&Fullscreen");
+        helpMenu->addAction("&About VLC");
+
+        // ===== MAIN LAYOUT =====
+        QWidget *central = new QWidget(this);
+        QVBoxLayout *mainLayout = new QVBoxLayout(central);
+        mainLayout->setContentsMargins(4, 4, 4, 4); // Tight corners/margins
+        mainLayout->setSpacing(4);
+
+        // Video Area (Mock)
+        QLabel *videoScreen = new QLabel("Video Display Area");
+        videoScreen->setAlignment(Qt::AlignCenter);
+        videoScreen->setStyleSheet("background-color: black; color: white; border: 2px inset #808080;");
+        videoScreen->setMinimumSize(400, 250);
+        mainLayout->addWidget(videoScreen);
+
+        // Controls Container
+        QWidget *controlsWidget = new QWidget;
+        QHBoxLayout *controlsLayout = new QHBoxLayout(controlsWidget);
+        controlsLayout->setContentsMargins(2, 2, 2, 2);
+        controlsLayout->setSpacing(2);
+
+        // Playback Buttons
+        QPushButton *btnPrev = new QPushButton("<<");
+        QPushButton *btnPlay = new QPushButton("►");
+        QPushButton *btnPause = new QPushButton("||");
+        QPushButton *btnStop = new QPushButton("■");
+        QPushButton *btnNext = new QPushButton(">>");
+
+        // Connect mock actions with explicit captures
+        connect(btnPlay, &QPushButton::clicked, [&, btnPlay]() { 
+            btnPlay->setChecked(true); 
+        });
+        
+        connect(btnPause, &QPushButton::clicked, [&, btnPause]() { 
+            btnPause->setChecked(!btnPause->isChecked()); 
+        });
+        
+        connect(btnStop, &QPushButton::clicked, [&, btnStop]() { 
+            btnStop->setChecked(false); 
+        });
+
+        controlsLayout->addWidget(btnPrev);
+        controlsLayout->addWidget(btnPlay);
+        controlsLayout->addWidget(btnPause);
+        controlsLayout->addWidget(btnStop);
+        controlsLayout->addWidget(btnNext);
+
+        // Time Label
+        QLabel *timeLabel = new QLabel("00:00 / 05:00");
+        timeLabel->setFixedWidth(100);
+        controlsLayout->addWidget(timeLabel);
+
+        // Progress Slider
+        QSlider *progressSlider = new QSlider(Qt::Horizontal);
+        progressSlider->setRange(0, 300);
+        progressSlider->setValue(0);
+        controlsLayout->addWidget(progressSlider, 1); // Stretch factor 1
+
+        // Volume Control
+        controlsLayout->addSpacing(10);
+        QLabel *volLabel = new QLabel("Vol:");
+        controlsLayout->addWidget(volLabel);
+        QSlider *volSlider = new QSlider(Qt::Horizontal);
+        volSlider->setRange(0, 100);
+        volSlider->setValue(80);
+        volSlider->setFixedWidth(80);
+        controlsLayout->addWidget(volSlider);
+
+        mainLayout->addWidget(controlsWidget);
+
+        // Status Bar
+        QStatusBar *statusBar = new QStatusBar(this);
+        statusBar->showMessage("Ready");
+        this->setStatusBar(statusBar);
+
+        setCentralWidget(central);
+    }
+};
+
+int main(int argc, char *argv[]) {
+    QApplication app(argc, argv);
+
+    RetroVLC window;
+    window.show();
+
+    return app.exec();
+}
